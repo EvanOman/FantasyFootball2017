@@ -1,7 +1,7 @@
 ---
-title: "4th Floor Fantast Draft 2016"
+title: "4th Floor Fantast Draft 2017"
 author: "Evan Oman"
-date: "September 20, 2016"
+date: "August 28, 2017"
 output: html_document
 ---
 
@@ -17,13 +17,13 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Data Preparation
 
-First we load in the spreadsheet Jacob used to record the draft:
+First we load in the spreadsheet I made from the draft board:
 
 ```{r}
 library("reshape2")
 library("plyr")
     
-draftData <- read.csv("./Draft.csv")
+draftData <- read.csv("./data/Draft2017.csv")
 print.data.frame(head(draftData), row.names=FALSE)
 ```
 
@@ -86,7 +86,7 @@ print.data.frame(head(draftData, n=10), row.names=FALSE)
 Now that the draft data has been prepped, we can load in ESPN rankings (from espn.com)
 
 ```{r}
-espn <- read.csv("./ESPN_Rankings.csv")
+espn <- read.csv("./data/FantasyProsRankings2017.csv")
 
 print.data.frame(head(espn, n=10), row.names=FALSE)
 ```
