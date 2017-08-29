@@ -27,14 +27,20 @@ draftData <- read.csv("./data/Draft2017.csv")
 print.data.frame(head(draftData), row.names=FALSE)
 ```
 
-As you can see, the data is organized by round with a column for each drafter. This format is often referred to as a "wide data-set." For this analysis we want a "tall data set" so we will use the "melt" function to reorganize the data into one row per data point (ie one row per pick).
+As you can see, the data is organized by round with a column for each drafter. This format is often referred to as a "wide data-set." For this analysis we want a "tall data set" so we will use the "melt" function to reorganize the data into one row per data point (ie one row per pick). Next we will drop the `Franchise` row and then melt the resulting dataset:
 
 ```{r warning=FALSE}
+# Drop the franchise row
+draftData <- subset(draftData, ROUND != "Franchise")
+
 # Melt the data
 draftData <- melt(draftData, id.vars = "ROUND")
 
 # Drop the row names
 rownames(draftData) <- NULL
+
+# Make the round a number instead of a string
+draftData$ROUND <- as.integer(draftData$ROUND)
 
 # Order by round (this is a stable sort)
 draftData <- draftData[order(draftData$ROUND), ]
@@ -65,7 +71,7 @@ snakeFunction <- function(n, rowLen=8)
 }
 
 # Create the list for out draft (8 drafters, 16 rounds)
-pickOrdering <- snakeFunction(8*16)
+pickOrdering <- snakeFunction(8*15)
 
 unlist(pickOrdering)
 ```
@@ -83,22 +89,22 @@ draftData <- draftData[order(draftData$PickNumber),]
 print.data.frame(head(draftData, n=10), row.names=FALSE)
 ```
 
-Now that the draft data has been prepped, we can load in ESPN rankings (from espn.com)
+Now that the draft data has been prepped, we can load in FantasyPros rankings
 
 ```{r}
-espn <- read.csv("./data/FantasyProsRankings2017.csv")
+fp_rankings <- read.csv("./data/FantasyProsRankings2017.csv")
 
-print.data.frame(head(espn, n=10), row.names=FALSE)
+print.data.frame(head(fp_rankings, n=10), row.names=FALSE)
 ```
 
-This data set is already in the format we want so we can go ahead and join it with our draft data with a match by Player. Note that this is a left join by default so the resulting dataframe will only contain rows from our draft dataframe. Note that some players will have will not have an ESPN ranking so after the join these players will have a `NA` rank. We will replace this with the worst possible ranking (`nrow(espn)`) plus `1`.
+This data set is already in the format we want so we can go ahead and join it with our draft data with a match by Player. Note that this is a left join by default so the resulting dataframe will only contain rows from our draft dataframe. Note that some players will have will not have an FantasyPros ranking so after the join these players will have a `NA` rank. We will replace this with the worst possible ranking (`nrow(espn)`) plus `1`.
 
 ```{r}
 # Join espn rankings data with draft data 
-joinedData <- join(draftData, espn, by="Player")
+joinedData <- join(draftData, fp_rankings, by="Player")
 
 # Some players will not have an ESPN ranking, give these players a worst ranking + 1
-joinedData$Rank[is.na(joinedData$Rank)] <- nrow(espn) + 1
+joinedData$Rank[is.na(joinedData$Rank)] <- nrow(fp_rankings) + 1
 
 print.data.frame(head(joinedData, n=10), row.names=FALSE)
 ```
