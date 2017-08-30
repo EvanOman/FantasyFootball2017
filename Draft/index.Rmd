@@ -23,7 +23,7 @@ First we load in the spreadsheet I made from the draft board:
 library("reshape2")
 library("plyr")
     
-draftData <- read.csv("./data/Draft2017.csv")
+draftData <- read.csv("./data/Draft2017.csv", stringsAsFactors = F)
 print.data.frame(head(draftData), row.names=FALSE)
 ```
 
@@ -40,7 +40,7 @@ draftData <- melt(draftData, id.vars = "ROUND")
 rownames(draftData) <- NULL
 
 # Make the round a number instead of a string
-draftData$ROUND <- as.integer(draftData$ROUND)
+draftData$ROUND <- as.numeric(as.character(draftData$ROUND))
 
 # Order by round (this is a stable sort)
 draftData <- draftData[order(draftData$ROUND), ]
@@ -86,25 +86,31 @@ draftData <- as.data.frame(lapply(draftData, unlist))
 # Order the draft data by pick number
 draftData <- draftData[order(draftData$PickNumber),]
 
+# Make the player a string instead of a factor
+draftData$Player <- as.character(draftData$Player)
+
 print.data.frame(head(draftData, n=10), row.names=FALSE)
 ```
 
-Now that the draft data has been prepped, we can load in FantasyPros rankings
+Now that the draft data has been prepped, we can load in the rankings data: 
 
 ```{r}
-fp_rankings <- read.csv("./data/FantasyProsRankings2017.csv")
+rankings <- read.csv("./data/EspnPprRankings2017.csv", stringsAsFactors = F)
 
-print.data.frame(head(fp_rankings, n=10), row.names=FALSE)
+# Read player as string, not factor
+rankings$Player <- as.character(rankings$Player)
+
+print.data.frame(head(rankings, n=10), row.names=FALSE)
 ```
 
-This data set is already in the format we want so we can go ahead and join it with our draft data with a match by Player. Note that this is a left join by default so the resulting dataframe will only contain rows from our draft dataframe. Note that some players will have will not have an FantasyPros ranking so after the join these players will have a `NA` rank. We will replace this with the worst possible ranking (`nrow(espn)`) plus `1`.
+This data set is already in the format we want so we can go ahead and join it with our draft data with a match by Player. Note that this is a left join by default so the resulting dataframe will only contain rows from our draft dataframe. Note that some players will have will not have a ranking so after the join these players will have a `NA` rank. We will replace this with the worst possible ranking (`nrow(rankings)`) plus `1`.
 
 ```{r}
-# Join espn rankings data with draft data 
-joinedData <- join(draftData, fp_rankings, by="Player")
+# Join rankings data with draft data 
+joinedData <- join(draftData, rankings, by="Player")
 
-# Some players will not have an ESPN ranking, give these players a worst ranking + 1
-joinedData$Rank[is.na(joinedData$Rank)] <- nrow(fp_rankings) + 1
+# Some players will not have a  ranking, give these players a worst ranking + 1
+joinedData$Rank[is.na(joinedData$Rank)] <- nrow(rankings) + 1
 
 print.data.frame(head(joinedData, n=10), row.names=FALSE)
 ```
