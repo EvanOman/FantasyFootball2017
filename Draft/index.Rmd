@@ -160,7 +160,7 @@ Thus we can see that `r bd <- avgDiffs[which.min(avgDiffs$RankDiff),]; bd$Drafte
 
 ```{r}
 library(ggplot2)
-ggplot(avgDiffs, aes(x=Drafter, y=RankDiff)) + geom_bar(stat = "identity") + ylab("Difference Between Pick # and Ranking")
+ggplot(avgDiffs, aes(x=Drafter, y=RankDiff)) + geom_bar(stat = "identity") + ylab("Mean Difference Between Pick # and Ranking")
 ```
 
 I was curious to see how undervalued/overvalued players were by position. We can use a similar methodology as above to figure this out.
@@ -175,7 +175,7 @@ posDiffs <- posDiffs[order(posDiffs$RankDiff, decreasing = FALSE),]
 
 print.data.frame(posDiffs, row.names=FALSE)
 
-ggplot(posDiffs, aes(x=Pos, y=RankDiff)) + geom_bar(stat = "identity") + ylab("Difference Between Pick # and Ranking")
+ggplot(posDiffs, aes(x=Pos, y=RankDiff)) + geom_bar(stat = "identity") + ylab("Mean Difference Between Pick # and Ranking")
 ```
 
 Here we can see that `r bpd <- posDiffs[which.min(posDiffs$RankDiff),]; bestDiff <- bpd$RankDiff; bpd$Pos` were `r if (bestDiff < 0) "under" else "over"` valued by `r abs(bestDiff)` positions and `r wpd <- posDiffs[which.max(posDiffs$RankDiff),]; worstDiff <- wpd$RankDiff; wpd$Pos` were `r if (worstDiff < 0) "under" else "over"`valued by `r abs(worstDiff)` positions.
