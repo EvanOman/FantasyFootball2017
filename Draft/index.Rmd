@@ -2,7 +2,9 @@
 title: "4th Floor Fantast Draft 2017"
 author: "Evan Oman"
 date: "August 28, 2017"
-output: html_document
+output: 
+  html_document:
+    toc: true
 ---
 
 ```{r global_options, include=FALSE}
@@ -14,6 +16,16 @@ options(width=100)
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+
+## Introduction
+
+The analysis below explores the performance of my friends during our 2017 Fantasy Football Draft. Since last year we have been drafting in a no-cheatsheet environment which means that each drafter must know who they are going to draft before the draft starts. As such the performance of each drafter could vary wildly and is thus an interesting phenomena to explore. 
+
+Note that I am using the ESPN Top 300 PPR rankings as a proxy for ground truth. Many of the rankings there are debatable but I think overall it gives a good rough estimate of each player's value.
+
+The source and data for this project are available at https://github.com/EvanOman/FantasyFootball2017. My contact info is available on my website: http://www.evanoman.com.
+
+Let the fun begin!
 
 ## Data Preparation
 
