@@ -27,9 +27,12 @@ draftData <- read.csv("./data/Draft2017.csv", stringsAsFactors = F)
 print.data.frame(head(draftData), row.names=FALSE)
 ```
 
-As you can see, the data is organized by round with a column for each drafter. This format is often referred to as a "wide data-set." For this analysis we want a "tall data set" so we will use the "melt" function to reorganize the data into one row per data point (ie one row per pick). Next we will drop the `Franchise` row and then melt the resulting dataset:
+As you can see, the data is organized by round with a column for each drafter. This format is often referred to as a "wide data-set." For this analysis we want a "tall data set" so we will use the "melt" function to reorganize the data into one row per data point (ie one row per pick). Note that we will first drop the `Franchise` row (not part of the draft directly) and then melt the resulting dataset:
 
 ```{r warning=FALSE}
+# Save the franchise row for later
+franchisePlayers <- draftData[draftData$ROUND == "Franchise", ]
+
 # Drop the franchise row
 draftData <- subset(draftData, ROUND != "Franchise")
 
@@ -50,7 +53,7 @@ draftData <- rename(draftData, c("variable" = "Drafter", "value" = "Player", "RO
 
 print.data.frame(head(draftData, n=10), row.names=FALSE)
 ```
-Now that we have the data in a tall form, we want to know what the actual number for each pick. This is complicated by the winding nature of the draft order (Chris had the 8th and 9th picks). To capture this behavior I have written the following "snake function" which creates a sequence which winds up to 8 and then counts down from 16, up to 24, etc.
+Now that we have the data in a tall form, we want to know the actual pick number for each row. This is complicated by the winding nature of the draft order (e.g. Jacob had both the 8th and 9th picks). To capture this behavior I have written the following "snake function" which creates a sequence which winds up to 8 and then counts down from 16, up to 24, etc.
 ```{r}
 # Creates the sequence: 1,2,3,4,5,6,7,8,16,15,14,13,12,11,10,9,17,18,19,20....
 snakeFunction <- function(n, rowLen=8)
@@ -103,7 +106,19 @@ rankings$Player <- as.character(rankings$Player)
 print.data.frame(head(rankings, n=10), row.names=FALSE)
 ```
 
-This data set is already in the format we want so we can go ahead and join it with our draft data with a match by Player. Note that this is a left join by default so the resulting dataframe will only contain rows from our draft dataframe. Note that some players will have will not have a ranking so after the join these players will have a `NA` rank. We will replace this with the worst possible ranking (`nrow(rankings)`) plus `1`.
+This dataset is already in the tall format we want so there will be no reformating needed. However we will need to remove the `Franchise` players from the rankings set and adjust the rankings of the remaining players. This can be accomplished by filtering out the players in `franchisePlayers` and then reranking the remaining players in consecutive order.
+
+```{r}
+# Remove franchise players
+rankings <- rankings[!(rankings$Player %in% franchisePlayers), ]
+
+# Apply consecutive ranking to remaining players
+rankings$Rank <- 1:nrow(rankings)
+
+print.data.frame(head(rankings, n=10), row.names=FALSE)
+```
+
+Now that this final step has been performed we can just join `draftData` with `rankings` by `Player`. Note that this is a left join by default so the resulting dataframe will only contain rows from our draft dataframe. The ranking dataset only includes the top 300 players. Thus some players will not have a ranking so after the join these players will have a `NA` rank. We will replace this with the worst possible ranking (`nrow(rankings)`) plus `1`.
 
 ```{r}
 # Join rankings data with draft data 
@@ -115,7 +130,7 @@ joinedData$Rank[is.na(joinedData$Rank)] <- nrow(rankings) + 1
 print.data.frame(head(joinedData, n=10), row.names=FALSE)
 ```
 
-We now have a dataframe with each draft pick and the corresponding pick number and player ranking. We can use the pick number and player ranking to measure the quality of each draft pick.
+We now have a dataframe with each draft pick with the corresponding pick number and player ranking. We can then use the pick number and player ranking to measure the quality of each draft pick.
 
 ```{r}
 joinedData$RankDiff <- joinedData$Rank - joinedData$PickNumber
@@ -141,7 +156,7 @@ avgDiffs <- avgDiffs[order(avgDiffs$RankDiff, decreasing = FALSE),]
 print.data.frame(avgDiffs, row.names=FALSE)
 ```
 
-Thus we can see that Chris had the best draft (on average, he got players 11.8 positions under rank value) and Kuuuby had the worst (on average, he got players 80.5 positions over rank value). Here is a quick visual of the above dataframe.
+Thus we can see that `r bd <- avgDiffs[which.min(avgDiffs$RankDiff),]; bd$Drafter` had the best draft (on average he got players `r bestDiff <- bd$RankDiff; abs(bestDiff)` positions `r if (bestDiff < 0) "under" else "over"` rank value) and `r wd <- avgDiffs[which.max(avgDiffs$RankDiff),]; wd$Drafter` had the worst (on average, he got players `r worstDiff <- wd$RankDiff; abs(worstDiff)` positions `r if (worstDiff < 0) "under" else "over"` rank value). Here is a quick visual of the above dataframe.
 
 ```{r}
 library(ggplot2)
@@ -163,9 +178,9 @@ print.data.frame(posDiffs, row.names=FALSE)
 ggplot(posDiffs, aes(x=Pos, y=RankDiff)) + geom_bar(stat = "identity") + ylab("Difference Between Pick # and Ranking")
 ```
 
-Here we can see that on average, RBs were undervalued by 6.6 rankings and D/STs were overvalued by 82 rankings.
+Here we can see that `r bpd <- posDiffs[which.min(posDiffs$RankDiff),]; bestDiff <- bpd$RankDiff; bpd$Pos` were `r if (bestDiff < 0) "under" else "over"` valued by `r abs(bestDiff)` positions and `r wpd <- posDiffs[which.max(posDiffs$RankDiff),]; worstDiff <- wpd$RankDiff; wpd$Pos` were `r if (worstDiff < 0) "under" else "over"`valued by `r abs(worstDiff)` positions.
 
-I was also curious to see how draft pick quality changed by round. In the next two figures I am plotting `Pick #` vs `Rank` with a diagonal line indicating a pick at the ESPN rank value. Thus all picks below this line are "good" and all of the above are "bad". In the first figure I colored the picks by Drafter and in the second I am coloring by position.
+I was also curious to see how draft pick quality changed by round. In the next two figures I am plotting `Pick #` vs `Rank` with a diagonal line indicating a pick at the rank value. Thus all picks below this line are "good" and all of the above are "bad". In the first figure I colored the picks by Drafter and in the second I am coloring by position.
 
 ```{r}
 # Scatter colored by drafter 
@@ -179,7 +194,7 @@ ggplot(joinedData, aes(x=PickNumber,y=Rank)) + geom_point(aes(color=Pos)) + geom
 
 It is pretty clear that as time goes on, worse and worse picks made.
 
-Finally I wanted to see how each drafter performed by round, the following figure accomplishes this.
+Finally I wanted to see how each drafter performed by round, the following figure accomplishes this (here any pick below the dashed line is "good" and anything above the dased line is "bad").
 
 ```{r}
 # Scatter colored by position, faceted by drafer
@@ -189,7 +204,7 @@ ggplot(joinedData, aes(x=Round, y=RankDiff)) + geom_line() + facet_wrap(~Drafter
 ## Conclusion
 Here are some final take aways:
 
-- **Best Draft:** Chris (avg pick 11.8 positions under rank value)
-- **Worst Draft:** Kuuby (avg pick 80.5 positions over rank value)
+- **Best Draft:** `r bd <- avgDiffs[which.min(avgDiffs$RankDiff),]; bd$Drafter` (avg pick `r bestDiff <- bd$RankDiff; abs(bestDiff)` positions `r if (bestDiff < 0) "under" else "over"` rank value)
+- **Worst Draft:** `r wd <- avgDiffs[which.max(avgDiffs$RankDiff),]; wd$Drafter` (avg pick `r worstDiff <- wd$RankDiff; abs(worstDiff)` positions `r if (worstDiff < 0) "under" else "over"` rank value)
 - **Best Pick:** Drafter: `r p <- joinedData[which.min(joinedData$RankDiff),]; p$Drafter`, Round: `r p$Round`, Player: `r p$Player`,  Rank Difference: `r p$RankDiff`
 - **Worst Pick:** Drafter: `r p <- joinedData[which.max(joinedData$RankDiff),]; p$Drafter`, Round: `r p$Round`, Player: `r p$Player`,  Rank Difference: `r p$RankDiff`
